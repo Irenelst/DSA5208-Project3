@@ -388,10 +388,10 @@ bash scripts/mpi/submit_strong_2d.sh
 bash scripts/mpi/submit_strong_3d.sh
 ```
 
-The 2D single-process strong-scaling case also has a dedicated PBS script:
+The 2D single-process strong-scaling case also has a dedicated PBS script. Submit the P=1 baseline experiment separately:
 
-```text
-scripts/mpi/formal_strong_2d_p1.pbs
+```bash
+qsub scripts/mpi/formal_strong_2d_p1.pbs
 ```
 
 ### 8.3 Weak Scaling
