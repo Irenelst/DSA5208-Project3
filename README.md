@@ -2,143 +2,71 @@
 
 ## 1. Project Overview
 
-This project investigates the parallelization and performance of Jacobi iterative solvers for the two-dimensional (2D) and three-dimensional (3D) Poisson equations.
+This project investigates the parallelization of Jacobi iterative solvers for the 2D and 3D Poisson equations using four implementations:
 
-Four implementations are developed and evaluated:
+- **Serial C++:** Sequential baseline
+- **MPI:** Distributed-memory parallelization with domain decomposition and halo exchange
+- **MPI + OpenMP:** Hybrid distributed- and shared-memory parallelization
+- **CUDA:** GPU acceleration and block-configuration experiments
 
-1. **Serial C++:** Sequential baseline for numerical validation and runtime scaling.
-2. **MPI:** Distributed-memory parallelization using domain decomposition and halo exchange.
-3. **MPI + OpenMP:** Hybrid distributed-memory and shared-memory parallelization.
-4. **CUDA:** Single-GPU implementations, including additional block-configuration experiments.
+Experiments were conducted on the **NUS Vanda HPC cluster** to evaluate numerical correctness, runtime, strong and weak scaling, speedup, efficiency, and communication overhead.
 
-The project evaluates numerical correctness, runtime scaling, parallel speedup, efficiency, communication overhead, and CPU/GPU performance trade-offs.
-
-Experiments were conducted on the **NUS Vanda High-Performance Computing (HPC) cluster**. Both 2D and 3D problems are investigated throughout the project.
+All formal benchmarks use **1,000 fixed Jacobi iterations**, with **five independent runs per configuration**. The median runtime is used for performance comparisons.
 
 ## 2. Repository Structure
 
 ```text
 DSA5208-Project3/
 ├── src/
-│   ├── serial/
-│   │   ├── poisson_2d_serial_vanda.cpp
-│   │   └── poisson_3d_serial_vanda.cpp
-│   ├── mpi/
-│   │   ├── poisson_2d_mpi_vanda.cpp
-│   │   └── poisson_3d_mpi_vanda.cpp
-│   ├── hybrid/
-│   │   ├── poisson_2d_hybrid.cpp
-│   │   └── poisson_3d_hybrid.cpp
-│   └── cuda/
-│       ├── poisson_2d_cuda.cu
-│       ├── poisson_3d_cuda.cu
-│       ├── poisson_2d_cuda_block.cu
-│       └── poisson_3d_cuda_block.cu
-│
+│   ├── serial/       # Serial C++ solvers (2D and 3D)
+│   ├── mpi/          # MPI solvers (2D and 3D)
+│   ├── hybrid/       # MPI + OpenMP solvers (2D and 3D)
+│   └── cuda/         # CUDA solvers and block variants
 ├── scripts/
-│   ├── serial/
-│   │   ├── formal_serial_2d.pbs
-│   │   ├── formal_serial_3d.pbs
-│   │   ├── run_serial_benchmark.sh
-│   │   ├── run_serial_repeats.sh
-│   │   └── run_serial_scaling.sh
-│   ├── mpi/
-│   │   ├── formal_strong_2d_p1.pbs
-│   │   ├── run_mpi_benchmark.sh
-│   │   ├── run_mpi_repeats.sh
-│   │   ├── submit_strong_2d.sh
-│   │   ├── submit_strong_3d.sh
-│   │   ├── submit_weak_2d.sh
-│   │   └── submit_weak_3d.sh
-│   ├── hybrid/
-│   │   ├── build.sh
-│   │   ├── run_config.py
-│   │   ├── run_suite.py
-│   │   ├── run_72cores.pbs
-│   │   ├── run_144cores.pbs
-│   │   ├── validate.py
-│   │   ├── validation.pbs
-│   │   └── summarize_results.py
-│   └── cuda/
-│       ├── block_benchmark.pbs
-│       ├── gpu_benchmark.pbs
-│       ├── run_block_benchmarks.py
-│       ├── run_gpu_benchmarks.py
-│       ├── validate_2d.pbs
-│       ├── validate_3d.pbs
-│       └── validate_block.pbs
-│
+│   ├── serial/       # Serial benchmark and PBS scripts
+│   ├── mpi/          # MPI strong/weak scaling scripts
+│   ├── hybrid/       # Hybrid build, validation, and benchmarks
+│   └── cuda/         # GPU validation and benchmark scripts
 └── README.md
 ```
 
-The `src/` directory contains the numerical implementations. The `scripts/` directory contains the corresponding compilation, validation, benchmarking, and PBS job-submission scripts.
+Source files are stored in `src/`, while compilation, validation, benchmarking, and PBS submission scripts are organized under `scripts/`.
 
-Generated executables, intermediate PBS files, and experimental CSV outputs are not required to be committed to the source repository.
+Generated executables and experimental results are stored locally in `bin/` and `results/`, respectively.
 
 ## 3. Software Requirements
 
-### 3.1 HPC Environment
+Experiments were performed on NUS Vanda using the PBS job scheduler.
 
-The primary experimental environment is the NUS Vanda HPC cluster, using the PBS job scheduler.
+| Component | Software / Environment |
+|---|---|
+| Language | C++17, Python 3, Bash |
+| CPU compiler | Intel oneAPI `icpx` |
+| MPI | Intel MPI (`mpiicpx`, `mpirun`) |
+| Shared-memory parallelism | OpenMP |
+| CPU module | `intel/2024a` |
+| GPU compiler | NVIDIA `nvcc` |
+| CUDA module | `cuda12.4/toolkit/12.4.1` |
+| GPU hardware | NVIDIA A40 |
+| Job scheduler | PBS (`qsub`) |
 
-**CPU environment**
+CPU experiments used Intel oneAPI 2024.2.0 and Intel MPI 2021.13.
 
-- C++17
-- Intel oneAPI C++ compiler (`icpx`)
-- Intel MPI (`mpiicpx`, `mpirun`)
-- OpenMP
-- Intel environment module: `intel/2024a`
+Before submitting PBS jobs, replace project-specific PBS account identifiers with an authorized account if necessary.
 
-**GPU environment**
-
-- NVIDIA CUDA C++ compiler (`nvcc`)
-- CUDA Toolkit module: `cuda12.4/toolkit/12.4.1`
-- NVIDIA GPU compute node
-- NVIDIA A40 GPU used in the reported experiments
-
-**Additional requirements**
-
-- Python 3
-- Standard Python libraries used by the benchmark scripts
-- Bash
-- PBS commands, including `qsub`
-
-The reported CPU experiments used Intel oneAPI 2024.2.0 and Intel MPI 2021.13.
-
-The CUDA experiments used NVIDIA CUDA Toolkit 12.4.1 with the `-O3 -std=c++17` compilation options.
-
-### 3.2 Environment Setup
-
-For CPU experiments:
-
-```bash
-module purge
-module load intel/2024a
-```
-
-For GPU experiments, use the CUDA environment specified in the GPU PBS scripts:
-
-```bash
-module load cuda12.4/toolkit/12.4.1
-```
-
-Modules should be loaded in the appropriate CPU or GPU job environment. The CPU and CUDA commands above do not necessarily need to be executed in the same shell session.
-
-PBS scripts contain project-specific resource requests. Replace the PBS project ID with an account or project authorized to submit jobs on the target HPC system.
-
-All paths in this README are relative to the repository root unless otherwise stated.
+**All commands below should be executed from the repository root**, unless otherwise stated.
 
 ## 4. Compilation
 
-Create an output directory for compiled executables:
+Clone the repository and create a directory for executables:
 
 ```bash
+git clone https://github.com/Irenelst/DSA5208-Project3.git
+cd DSA5208-Project3
 mkdir -p bin
 ```
 
-### 4.1 Serial C++
-
-Load the Intel compiler environment and compile the two serial implementations:
+### 4.1 Serial
 
 ```bash
 module load intel/2024a
@@ -154,8 +82,6 @@ icpx -O3 -std=c++17 \
 
 ### 4.2 MPI
 
-Compile the distributed-memory implementations:
-
 ```bash
 module load intel/2024a
 
@@ -170,31 +96,18 @@ mpiicpx -O3 -std=c++17 \
 
 ### 4.3 MPI + OpenMP
 
-The hybrid implementation uses the Intel MPI C++ compiler with OpenMP support.
-
-Compile the hybrid executables and their MPI reference dependencies using:
+The hybrid build script compiles both hybrid solvers and their MPI reference executables.
 
 ```bash
 module load intel/2024a
 bash scripts/hybrid/build.sh
 ```
 
-The hybrid build process prepares the executables required by the benchmark and validation scripts, including the 2D and 3D hybrid solvers.
-
-The validation workflow also requires MPI reference executables compiled from the corresponding MPI source implementations.
-
 ### 4.4 CUDA
-
-Load the CUDA environment:
 
 ```bash
 module load cuda12.4/toolkit/12.4.1
-mkdir -p bin
-```
 
-Compile the four CUDA implementations:
-
-```bash
 nvcc -O3 -std=c++17 \
   src/cuda/poisson_2d_cuda.cu \
   -o bin/poisson_2d_cuda
@@ -212,35 +125,17 @@ nvcc -O3 -std=c++17 \
   -o bin/poisson_3d_cuda_block
 ```
 
-The CUDA PBS and Python scripts may use implementation-specific executable names or working directories. Ensure these agree with the compiled executable paths before submitting GPU jobs.
+CPU and GPU compilation should be performed in their respective software environments.
 
 ## 5. Numerical Validation
 
-Correctness is assessed before performance benchmarking.
+Numerical correctness is assessed before performance benchmarking using convergence, relative residuals, analytical errors, and agreement between implementations.
 
-The validation process checks numerical convergence, relative residuals, maximum analytical errors, and consistency between implementations.
+### Serial and MPI
 
-### 5.1 Serial and MPI Validation
+The primary validation grid is N = 16 for both 2D and 3D. MPI validation includes process counts of 1, 2, and 4.
 
-Small-grid tests are used to verify the numerical solver before larger-scale experiments.
-
-The primary validation grid is:
-
-- 2D: N = 16
-- 3D: N = 16
-
-MPI validation also compares results across different process counts, including 1, 2, and 4 MPI ranks.
-
-The validation tests check:
-
-- Convergence under the specified stopping criterion
-- Final relative residual
-- Maximum error against the analytical solution
-- Agreement between serial and MPI implementations
-
-The serial and MPI source files support validation and fixed-iteration benchmark modes.
-
-Example validation commands:
+Example commands:
 
 ```bash
 ./bin/poisson_2d_serial_vanda validation 16
@@ -250,35 +145,19 @@ mpirun -np 4 ./bin/poisson_2d_mpi_vanda validation 16
 mpirun -np 4 ./bin/poisson_3d_mpi_vanda validation 16
 ```
 
-### 5.2 Hybrid Validation
+### MPI + OpenMP
 
-The hybrid validation procedure tests combinations of MPI ranks and OpenMP threads, including uneven domain decomposition.
-
-Submit the validation job:
+Submit the hybrid validation job:
 
 ```bash
 qsub scripts/hybrid/validation.pbs
 ```
 
-The validation script is:
+The validation workflow uses `scripts/hybrid/validate.py` and covers 54 test cases.
 
-```text
-scripts/hybrid/validate.py
-```
+### CUDA
 
-It performs fixed-iteration comparisons and convergence checks against the MPI reference implementation and analytical expectations.
-
-The configured validation matrix contains 54 test cases.
-
-Expected output location:
-
-```text
-results/hybrid/All_54_Validation_Tests.csv
-```
-
-### 5.3 CUDA Validation
-
-CUDA validation is performed using the supplied PBS scripts:
+Submit the GPU validation jobs:
 
 ```bash
 qsub scripts/cuda/validate_2d.pbs
@@ -286,210 +165,74 @@ qsub scripts/cuda/validate_3d.pbs
 qsub scripts/cuda/validate_block.pbs
 ```
 
-These tests cover the 2D and 3D CUDA solvers and the additional block-configuration implementations.
+These jobs require a compatible NVIDIA GPU compute node.
 
-GPU validation requires access to a suitable NVIDIA GPU compute node.
+## 6. Reproducing the Main Experiments
 
-## 6. Benchmark Methodology
+All formal experiments use 1,000 fixed iterations and five repeated runs per configuration.
 
-All reported formal performance benchmarks use a fixed number of **1,000 Jacobi iterations**.
+### 6.1 Serial Runtime Scaling
 
-For each experimental configuration:
+| Dimension | Grid sizes (N) |
+|---|---|
+| 2D | 128, 256, 512, 1024, 2048, 4096 |
+| 3D | 32, 64, 128, 256 |
 
-- Five independent runs are performed.
-- The median runtime is used as the representative performance measurement.
-- Fixed-iteration timing is used to compare implementations under consistent computational workloads.
-- Numerical validation is conducted separately from the formal performance measurements.
-
-Fixed-iteration runtime should not be interpreted as time to convergence.
-
-The experiments cover serial runtime scaling, MPI strong scaling, MPI weak scaling, MPI+OpenMP performance, and CUDA performance.
-
-## 7. Serial Runtime Scaling
-
-Serial scaling evaluates the increase in computational runtime as the problem size grows while using a single CPU core.
-
-### 7.1 Experiment Configuration
-
-| Dimension | Grid sizes (N) | CPU cores | Iterations | Repeats |
-|---|---|---|---|---|
-| 2D | 128, 256, 512, 1024, 2048, 4096 | 1 | 1000 | 5 |
-| 3D | 32, 64, 128, 256 | 1 | 1000 | 5 |
-
-### 7.2 Reproduction
-
-The relevant scripts are:
-
-```text
-scripts/serial/run_serial_benchmark.sh
-scripts/serial/run_serial_repeats.sh
-scripts/serial/run_serial_scaling.sh
-scripts/serial/formal_serial_2d.pbs
-scripts/serial/formal_serial_3d.pbs
-```
-
-Make the shell scripts executable if required:
-
-```bash
-chmod +x scripts/serial/*.sh
-```
-
-Submit the formal PBS jobs:
+Submit the formal experiments:
 
 ```bash
 qsub scripts/serial/formal_serial_2d.pbs
 qsub scripts/serial/formal_serial_3d.pbs
 ```
 
-The benchmark scripts execute the compiled serial solvers and collect runtime measurements.
+The PBS jobs invoke the serial scaling, repeat, and benchmark scripts under `scripts/serial/`.
 
-The results are used to examine computational complexity and runtime growth with grid size.
+### 6.2 MPI Strong Scaling
 
-## 8. MPI Strong and Weak Scaling
+Strong scaling uses fixed global grid sizes:
 
-MPI experiments use distributed-memory parallelization and halo exchange.
-
-Both 2D and 3D implementations are evaluated.
-
-### 8.1 MPI Process Counts
-
-The tested MPI process counts are:
-
-```text
-1, 2, 4, 8, 16, 32, 36, 72, 144, 288
-```
-
-One MPI process is assigned per allocated CPU core for the MPI-only experiments.
-
-Each configuration performs 1,000 iterations and is repeated five times.
-
-### 8.2 Strong Scaling
-
-Strong scaling keeps the global problem size fixed while increasing the number of MPI processes.
-
-| Dimension | Global grid size (N) | MPI ranks |
+| Dimension | Grid size (N) | MPI ranks |
 |---|---|---|
-| 2D | 8192 | 1–288 |
-| 3D | 384 | 1–288 |
+| 2D | 8192 | 1, 2, 4, 8, 16, 32, 36, 72, 144, 288 |
+| 3D | 384 | 1, 2, 4, 8, 16, 32, 36, 72, 144, 288 |
 
-The submission scripts are:
-
-```text
-scripts/mpi/submit_strong_2d.sh
-scripts/mpi/submit_strong_3d.sh
-```
-
-Run from the repository root:
+Submit the experiments:
 
 ```bash
-chmod +x scripts/mpi/*.sh
-
 bash scripts/mpi/submit_strong_2d.sh
 bash scripts/mpi/submit_strong_3d.sh
 ```
 
-The 2D single-process strong-scaling case also has a dedicated PBS script. Submit the P=1 baseline experiment separately:
+The 2D P=1 baseline uses a separate PBS script:
 
 ```bash
 qsub scripts/mpi/formal_strong_2d_p1.pbs
 ```
 
-### 8.3 Weak Scaling
+### 6.3 MPI Weak Scaling
 
-Weak scaling increases the global problem size with the number of MPI processes to maintain approximately constant computational work per process.
+Weak scaling adjusts the global grid size according to the number of MPI processes P:
 
-The grid sizes follow:
+- **2D:** N(P) = round(1024 × sqrt(P))
+- **3D:** N(P) = round(128 × P^(1/3))
 
-**2D:**
-
-```text
-N(P) = round(1024 × sqrt(P))
-```
-
-**3D:**
-
-```text
-N(P) = round(128 × P^(1/3))
-```
-
-where P denotes the number of MPI processes.
-
-The submission scripts are:
-
-```text
-scripts/mpi/submit_weak_2d.sh
-scripts/mpi/submit_weak_3d.sh
-```
-
-Run from the repository root:
+Submit the experiments:
 
 ```bash
 bash scripts/mpi/submit_weak_2d.sh
 bash scripts/mpi/submit_weak_3d.sh
 ```
 
-The submission scripts generate PBS job files and submit the requested MPI configurations.
+The MPI submission scripts generate PBS files and invoke `run_mpi_repeats.sh` and `run_mpi_benchmark.sh` to collect timing measurements.
 
-The generated PBS files are intermediate artifacts and do not need to be stored in the repository.
+### 6.4 MPI + OpenMP Hybrid
 
-### 8.4 MPI Benchmark Scripts
+Hybrid experiments use the same fixed global grid sizes as MPI strong scaling: N = 8192 (2D) and N = 384 (3D).
 
-The MPI workflow uses:
-
-```text
-scripts/mpi/run_mpi_benchmark.sh
-scripts/mpi/run_mpi_repeats.sh
-```
-
-These scripts execute the compiled MPI solvers, repeat the benchmark runs, and collect timing information.
-
-MPI performance analysis includes runtime, speedup, parallel efficiency, computation time, and communication overhead.
-
-## 9. MPI + OpenMP Hybrid Experiments
-
-The hybrid implementation combines MPI domain decomposition with OpenMP threading within each MPI process.
-
-The experiments compare different MPI-rank and OpenMP-thread configurations while keeping the total allocated CPU core count fixed.
-
-### 9.1 Experiment Configuration
-
-The hybrid experiments use the same global problem sizes as MPI strong scaling:
-
-- 2D: N = 8192
-- 3D: N = 384
-
-Two resource configurations are tested.
-
-**72 total CPU cores, one node**
-
-| MPI ranks | OpenMP threads per rank | Total CPU cores |
-|---|---|---|
-| 72 | 1 | 72 |
-| 36 | 2 | 72 |
-| 18 | 4 | 72 |
-
-**144 total CPU cores, two nodes**
-
-| MPI ranks | OpenMP threads per rank | Total CPU cores |
-|---|---|---|
-| 144 | 1 | 144 |
-| 72 | 2 | 144 |
-| 36 | 4 | 144 |
-
-Both 2D and 3D problems are tested.
-
-Each configuration uses 1,000 iterations and five independent runs.
-
-The experiment therefore contains 12 configurations and 60 measured benchmark runs.
-
-### 9.2 Reproduction
-
-First compile the hybrid implementation:
-
-```bash
-module load intel/2024a
-bash scripts/hybrid/build.sh
-```
+| Total CPU cores | MPI ranks × OpenMP threads |
+|---|---|
+| 72 | 72×1, 36×2, 18×4 |
+| 144 | 144×1, 72×2, 36×4 |
 
 Submit the benchmark jobs:
 
@@ -498,249 +241,57 @@ qsub scripts/hybrid/run_72cores.pbs
 qsub scripts/hybrid/run_144cores.pbs
 ```
 
-The PBS scripts invoke:
+The workflow uses `scripts/hybrid/run_suite.py` and `run_config.py`, with controlled MPI/OpenMP process and thread binding.
 
-```text
-scripts/hybrid/run_suite.py
-```
+### 6.5 CUDA GPU Benchmarks
 
-The shared benchmark configuration is provided by:
+CUDA experiments evaluate both standard GPU implementations and alternative block configurations.
 
-```text
-scripts/hybrid/run_config.py
-```
-
-The experiments use OpenMP binding settings, including:
-
-```bash
-export I_MPI_PIN_DOMAIN=omp
-export OMP_DYNAMIC=FALSE
-export OMP_PLACES=cores
-export OMP_PROC_BIND=close
-```
-
-These settings help control process and thread placement during hybrid execution.
-
-### 9.3 Hybrid Results Processing
-
-Hybrid results are summarized using:
-
-```text
-scripts/hybrid/summarize_results.py
-```
-
-The script:
-
-1. Requires five distinct repeats per configuration.
-2. Selects the complete run corresponding to the median parallel runtime.
-3. Calculates the runtime standard deviation.
-4. Computes speedup relative to the matching one-thread-per-rank configuration at the same total CPU core count.
-
-Example usage, after benchmark CSV files have been generated:
-
-```bash
-python3 scripts/hybrid/summarize_results.py \
-  results/hybrid/New_Runs/*/*.csv
-```
-
-Default summary output:
-
-```text
-results/hybrid/Median_Runtime_Results.csv
-```
-
-The hybrid speedup calculated by this script uses the corresponding hybrid configuration with one OpenMP thread per MPI rank as its reference. It is not automatically equivalent to a comparison against the separately implemented MPI-only solver.
-
-## 10. CUDA GPU Experiments
-
-The CUDA implementation evaluates GPU acceleration for the 2D and 3D Poisson solvers.
-
-Additional experiments investigate the effects of CUDA block configurations.
-
-### 10.1 GPU Environment
-
-The reported GPU experiments used:
-
-- NUS Vanda GPU compute nodes
-- One NVIDIA A40 GPU
-- CUDA Toolkit 12.4.1
-- `nvcc -O3 -std=c++17`
-
-The PBS GPU jobs request the GPU and associated CPU and memory resources required by the benchmark scripts.
-
-### 10.2 CUDA Validation
-
-The CUDA validation scripts are:
-
-```text
-scripts/cuda/validate_2d.pbs
-scripts/cuda/validate_3d.pbs
-scripts/cuda/validate_block.pbs
-```
-
-Submit the validation jobs:
-
-```bash
-qsub scripts/cuda/validate_2d.pbs
-qsub scripts/cuda/validate_3d.pbs
-qsub scripts/cuda/validate_block.pbs
-```
-
-### 10.3 GPU Benchmarking
-
-The standard CUDA benchmark workflow uses:
-
-```text
-scripts/cuda/gpu_benchmark.pbs
-scripts/cuda/run_gpu_benchmarks.py
-```
-
-The block-configuration experiments use:
-
-```text
-scripts/cuda/block_benchmark.pbs
-scripts/cuda/run_block_benchmarks.py
-```
-
-Submit the benchmark jobs:
+Submit the formal benchmark jobs:
 
 ```bash
 qsub scripts/cuda/gpu_benchmark.pbs
 qsub scripts/cuda/block_benchmark.pbs
 ```
 
-The GPU benchmark suite contains 60 formal runs across 12 configurations, while the block-configuration study contains 50 runs across 10 configurations.
+The corresponding Python drivers are:
 
-These experiments are used to evaluate GPU runtime, acceleration relative to CPU baselines, and sensitivity to block configuration.
+- `scripts/cuda/run_gpu_benchmarks.py`
+- `scripts/cuda/run_block_benchmarks.py`
 
-The original GPU benchmark package includes raw-run and median-summary CSV outputs. Such results may be retained separately from the source repository.
+The formal GPU study includes 60 runs across 12 configurations; the block-configuration study includes 50 runs across 10 configurations.
 
-**Path note:** The CUDA scripts were reorganized into `scripts/cuda/`, while the CUDA source files are located in `src/cuda/`. Any working-directory or executable-path assumptions inherited from the original standalone GPU package must be checked before rerunning the PBS jobs.
+## 7. Results and Performance Metrics
 
-## 11. Performance Metrics and Results Processing
+Benchmark scripts generate runtime measurements and CSV results in the configured output directories.
 
-### 11.1 Representative Runtime
+Performance is evaluated using:
 
-Each formal configuration is executed five times.
+- **Median runtime:** Median of five independent runs
+- **Strong-scaling speedup:** S(P) = T(1) / T(P)
+- **Parallel efficiency:** E(P) = S(P) / P
+- **Weak scaling:** Runtime as process count and global workload increase together
+- **Communication overhead:** MPI computation and communication timing
+- **GPU acceleration:** Comparison against relevant CPU baselines
 
-The reported representative runtime is the median of the five measured runtimes.
-
-For the hybrid experiments, the representative observation is selected as a complete benchmark record rather than calculating an independent median for every timing field.
-
-### 11.2 Strong-Scaling Speedup
-
-Strong-scaling speedup is calculated as:
-
-```text
-S(P) = T(1) / T(P)
-```
-
-where:
-
-- `T(1)` is the runtime using one MPI process.
-- `T(P)` is the runtime using P MPI processes.
-
-### 11.3 Parallel Efficiency
-
-Parallel efficiency is calculated as:
-
-```text
-E(P) = S(P) / P
-```
-
-Efficiency measures the fraction of ideal linear speedup achieved by the parallel implementation.
-
-### 11.4 Weak Scaling
-
-Weak-scaling analysis compares execution times as the number of processes and global problem size increase together.
-
-The problem size is selected to keep the computational workload per process approximately constant.
-
-### 11.5 Communication Analysis
-
-MPI timing measurements are used to examine the relative costs of computation and communication.
-
-The analysis considers the effects of halo exchange, synchronization, process count, and problem dimensionality.
-
-### 11.6 CPU/GPU Comparison
-
-GPU performance is compared against the relevant CPU implementations using compatible problem sizes and benchmark definitions.
-
-These comparisons account for differences in hardware allocation and parallel execution models.
-
-### 11.7 Result Reproduction
-
-The benchmark scripts generate runtime measurements and, where supported, machine-readable CSV output.
-
-The hybrid implementation includes a dedicated summary script. Serial, MPI, and CUDA results can be summarized from their corresponding benchmark outputs using the statistical definitions above.
-
-The repository focuses on reproducing the main numerical experiments. A separate script for regenerating every report figure is not included.
-
-For complete numerical findings, plots, and interpretation, refer to the accompanying project report.
-
-## 12. Reproducibility Notes
-
-To reproduce the experiments:
-
-1. Obtain access to NUS Vanda or an HPC environment with compatible compilers, MPI, CUDA, and PBS scheduling.
-2. Clone the repository.
-3. Load the appropriate CPU or GPU software modules.
-4. Compile the required implementations.
-5. Run the validation tests before formal benchmarking.
-6. Submit the relevant PBS scripts.
-7. Collect benchmark outputs and calculate the reported performance metrics.
-
-Clone the repository using:
+For hybrid results, the summary script is:
 
 ```bash
-git clone https://github.com/IreneIst/DSA5208-Project3.git
-cd DSA5208-Project3
+python3 scripts/hybrid/summarize_results.py \
+  results/hybrid/New_Runs/*/*.csv
 ```
 
-If necessary, enable execution permissions for shell scripts:
+It validates repeated measurements and generates summary statistics, including median runtime and speedup relative to the matching one-thread-per-rank hybrid configuration.
 
-```bash
-chmod +x scripts/serial/*.sh
-chmod +x scripts/mpi/*.sh
-chmod +x scripts/hybrid/*.sh
-```
+Detailed numerical results, plots, and performance analysis are provided in the accompanying project report.
 
-The scripts are designed around the original NUS Vanda environment. Reproduction on another HPC cluster may require changes to:
+## 8. Reproducibility Notes
 
-- PBS project identifiers and resource requests
-- Environment module names
-- MPI launch configuration
-- CPU and GPU hardware allocation
-- Executable paths and working directories
+- The scripts are configured for the original NUS Vanda environment.
+- PBS project IDs, queue settings, module names, and resource requests may require adjustment on another HPC system.
+- MPI and OpenMP process placement can affect performance.
+- GPU benchmarks require compatible CUDA hardware and executable paths.
+- Generated PBS files, executables, and benchmark CSV outputs are not included in the source repository.
+- Fixed-iteration runtime measurements are distinct from time-to-convergence measurements.
 
-Performance measurements may differ across systems due to hardware characteristics, memory bandwidth, MPI communication behavior, resource placement, and runtime variability.
-
-The reported results use fixed-iteration timing and should not be interpreted as a universal comparison of convergence speed.
-
-## 13. Submission Contents
-
-This repository provides:
-
-- Serial C++ implementations for 2D and 3D Poisson equations
-- MPI implementations for 2D and 3D Poisson equations
-- MPI + OpenMP hybrid implementations
-- CUDA GPU implementations and block-configuration variants
-- Compilation and validation scripts
-- Serial and MPI scaling experiment scripts
-- Hybrid benchmark and result-summary scripts
-- CUDA validation and benchmark scripts
-- Instructions for reproducing the main experiments
-
-Compiled binaries, temporary PBS job files, debugging logs, and terminal output are excluded from the source submission.
-
-The accompanying project report contains the detailed numerical results, performance plots, discussion, limitations, and conclusions.
-
----
-
-**Course:** DSA5208 — Scalable Distributed Computing for Data Science
-
-**Project:** Project 3 — Parallelizing an Algorithm with MPI+X
-
-**Platform:** NUS Vanda HPC Cluster
-
-**Algorithm:** Jacobi iterative solver for 2D and 3D Poisson equations
+The repository provides the source code, experiment scripts, and instructions needed to reproduce the main numerical experiments. Exact performance measurements may vary across hardware and runtime environments.
