@@ -1,0 +1,30 @@
+
+#!/bin/bash
+#PBS -N hybrid_validation
+#PBS -P personal-e0869267
+#PBS -j oe
+#PBS -k oed
+#PBS -l walltime=00:20:00
+#PBS -l select=1:ncpus=16:mpiprocs=16:ompthreads=1:mem=6gb
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+
+module purge
+module load intel/2024a
+
+echo "========================================"
+echo "Hybrid MPI+OpenMP Validation"
+echo "========================================"
+echo "Hostname: $(hostname)"
+echo "Date: $(date)"
+echo "Working directory: $(pwd)"
+echo
+
+python3 scripts/hybrid/validate.py
+
+echo
+echo "========================================"
+echo "Hybrid validation completed successfully"
+echo "========================================"

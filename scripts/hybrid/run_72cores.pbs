@@ -1,0 +1,25 @@
+
+#!/bin/bash
+#PBS -N final_c72
+#PBS -P personal-e0869267
+#PBS -j oe
+#PBS -l walltime=00:15:00
+#PBS -l select=1:ncpus=72:mpiprocs=72:ompthreads=1:mem=12gb
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+
+module purge
+module load intel/2024a
+
+export I_MPI_PIN_DOMAIN=omp
+export OMP_DYNAMIC=FALSE
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+module list 2>&1
+mpiicpx --version
+
+python3 scripts/hybrid/run_suite.py --nodes 1 --threads 1 2 4
+
