@@ -1,0 +1,26 @@
+#!/bin/bash
+#PBS -N serial2d_formal
+#PBS -P personal-e0869267
+#PBS -j oe
+#PBS -k oed
+#PBS -l walltime=00:10:00
+#PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1:mem=6gb
+
+cd $PBS_O_WORKDIR
+
+module purge
+module load intel/2024a
+
+echo "===== 2D Serial Scaling Formal Experiment ====="
+echo "Hostname: $(hostname)"
+echo "Date: $(date)"
+echo
+
+mkdir -p results
+
+bash scripts/run_serial_scaling.sh \
+    2D \
+    1000 \
+    5 \
+    results/serial_2d.csv \
+    128 256 512 1024 2048 4096
