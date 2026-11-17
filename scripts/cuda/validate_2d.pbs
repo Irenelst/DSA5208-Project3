@@ -1,0 +1,25 @@
+
+#!/bin/bash
+#PBS -N poisson2d_validate
+#PBS -q auto_free
+#PBS -l select=1:ncpus=4:ngpus=1:mem=8gb
+#PBS -l walltime=00:20:00
+#PBS -j oe
+
+set -euo pipefail
+
+# Run from repository root
+cd "$PBS_O_WORKDIR"
+
+# Load CUDA environment
+module load cuda12.4/toolkit/12.4.1
+
+echo "=== GPU Information ==="
+hostname
+nvidia-smi
+
+echo "=== 2D Poisson CUDA Validation ==="
+
+./bin/poisson_2d_cuda validation 16
+
+echo "=== 2D VALIDATION COMPLETED ==="

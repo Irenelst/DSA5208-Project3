@@ -1,0 +1,57 @@
+
+#!/bin/bash
+# ============================================================
+# DSA5208 Project 3
+# CUDA GPU Benchmark - 2D and 3D Poisson Solvers
+#
+# Formal experiments:
+#   Dimensions: 2D and 3D
+#   Iterations: 1000
+#   Repeats: 5
+#
+# Submit from repository root:
+#   qsub scripts/cuda/gpu_benchmark.pbs
+# ============================================================
+
+#PBS -N poisson_gpu_bench
+#PBS -q auto_free
+#PBS -l select=1:ncpus=4:ngpus=1:mem=8gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+
+# Move to the repository root
+cd "$PBS_O_WORKDIR"
+
+# Load CUDA environment
+module load cuda12.4/toolkit/12.4.1
+
+echo "========================================"
+echo "CUDA GPU Benchmark"
+echo "========================================"
+echo "Job ID: ${PBS_JOBID:-unknown}"
+echo "Hostname: $(hostname)"
+echo "Working directory: $(pwd)"
+echo "========================================"
+
+# Display GPU information
+nvidia-smi
+
+# Create a unique output directory for this PBS job
+JOB_ID="${PBS_JOBID:-manual}"
+JOB_ID="${JOB_ID//[^a-zA-Z0-9._-]/_}"
+
+OUTPUT_DIR="results/cuda/gpu_formal_${JOB_ID}"
+
+# Run formal GPU experiments
+python3 scripts/cuda/run_gpu_benchmarks.py \
+    --dimension both \
+    --repeats 5 \
+    --outdir "$OUTPUT_DIR"
+
+echo
+echo "========================================"
+echo "CUDA GPU benchmark completed."
+echo "Results: $OUTPUT_DIR"
+echo "========================================"
