@@ -72,7 +72,7 @@ fi
 
 RUNNER="./scripts/mpi/run_mpi_benchmark.sh"
 
-if [ ! -x "$RUNNER" ]; then
+if [ ! -f "$RUNNER" ]; then
     echo "Error: benchmark runner not found or not executable:"
     echo "  $RUNNER"
     exit 1
@@ -110,7 +110,7 @@ do
     echo "########################################"
     echo
 
-    "$RUNNER" \
+    bash "$RUNNER" \
         "$EXPERIMENT" \
         "$DIMENSION" \
         "$N" \
@@ -132,3 +132,4 @@ echo "All repeats completed successfully"
 echo "========================================"
 echo "Results saved to:"
 echo "$OUTPUT_CSV"
+
